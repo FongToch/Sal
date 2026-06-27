@@ -46,13 +46,13 @@ const writeOrders = (data) => {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
-        // នៅលើ Vercel គឺ Read-only វានឹងលោតចូលទីនេះ ប៉ុន្តែវាមិនធ្វើឱ្យដាច់ Server ឡើយ
         console.error('⚠️ Database local write status:', error.message);
     }
 };
 
 // មុខងារបម្លែងឈ្មោះហ្គេមពី Frontend ទៅជា Code របស់ G2Bulk
 function filterGameCode(gameName) {
+    if (!gameName) return '';
     const name = gameName.toLowerCase().trim();
     if (name.includes('mobile legends') || name.includes('mlbb')) return 'mlbb';
     if (name.includes('pubg')) return 'pubg_mobile';
@@ -72,14 +72,25 @@ async function autoDeliverDiamond(order) {
     const gameCode = filterGameCode(order.game);
     const url = `${G2BULK_CONFIG.BASE_URL}/games/${gameCode}/order`;
 
-    console.log(`🤖 [G2BULK] កំពុងរត់ទៅកុម្ម៉ង់កញ្ចប់ "${order.diamond}" សម្រាប់ ID: ${order.playerId}...`);
+    // 🛠️ ជម្រះទិន្នន័យ Zone ID ឱ្យស្អាតមុននឹងផ្ញើទៅបុកលុយហ្គេម
+    let cleanZoneId = order.zoneId ? order.zoneId.toString().trim() : '';
+    if (
+        cleanZoneId.toLowerCase() === 'n/a' || 
+        cleanZoneId.toLowerCase() === 'null' || 
+        cleanZoneId.toLowerCase() === 'undefined' ||
+        gameCode !== 'mlbb' // បើមិនមែន Mobile Legends គឺមិនត្រូវការ Zone ID ឡើយ
+    ) {
+        cleanZoneId = '';
+    }
+
+    console.log(`🤖 [G2BULK] កំពុងកុម្ម៉ង់កញ្ចប់ "${order.diamond}" សម្រាប់ ID: ${order.playerId} | Zone: "${cleanZoneId}"...`);
 
     const requestBody = {
         catalogue_name: order.diamond, 
         player_id: order.playerId,
-        server_id: order.zoneId === 'N/A' || order.zoneId === 'null' ? '' : order.zoneId,
+        server_id: cleanZoneId,
         charname: 'Customer', 
-        remark: `Order ${order.id}`, // រក្សាទុកលេខ ID កុម្ម៉ង់ដើម្បីឆែកពេល Webhook របស់ G2Bulk បាញ់មកវិញ
+        remark: `Order ${order.id}`, 
         callback_url: `https://${process.env.VERCEL_URL || 'pharath3.vercel.app'}/api/reseller/webhook` 
     };
 
@@ -94,7 +105,7 @@ async function autoDeliverDiamond(order) {
         });
 
         const result = await response.json();
-        console.log('📦 លទ្ធផលតបពី G2Bulk៖', result);
+        console.log('📦 លទ្ធផលតបពី G2Bulk ពេលកុម្ម៉ង់៖', result);
 
         if (result.success === true) {
             console.log(`⏳ [PENDING] G2Bulk បានទទួលការបញ្ជាទិញហើយ កំពុងដំណើរការ...`);
@@ -112,7 +123,7 @@ async function autoDeliverDiamond(order) {
 // 🌐 ផ្នែកអាសយដ្ឋាន API (ROUTE ENDPOINTS)
 // =========================================================================
 
-// ១. 🔍 API ផ្ទៀងផ្ទាត់ឈ្មោះគណនីហ្គេមពិតៗពី G2Bulk
+// ១. 🔍 API ផ្ទៀងផ្ទាត់ឈ្មោះគណនីហ្គេមពិតៗពី G2Bulk (គាំទ្រគ្រប់ហ្គេម ១០០%)
 app.post('/api/games/verify', async (req, res) => {
     try {
         const { game, playerId, zoneId } = req.body;
@@ -123,6 +134,19 @@ app.post('/api/games/verify', async (req, res) => {
 
         const gameCode = filterGameCode(game);
 
+        // 🛠️ ជម្រះទិន្នន័យ Zone ID ឱ្យស្អាតដាច់ខាតសម្រាប់ PUBG នឹង Free Fire កុំឱ្យ G2Bulk បដិសេធ
+        let cleanZoneId = zoneId ? zoneId.toString().trim() : '';
+        if (
+            cleanZoneId.toLowerCase() === 'n/a' || 
+            cleanZoneId.toLowerCase() === 'null' || 
+            cleanZoneId.toLowerCase() === 'undefined' ||
+            gameCode !== 'mlbb' // បើមិនមែន Mobile Legends គឺដក Zone ចោលទាំងអស់
+        ) {
+            cleanZoneId = '';
+        }
+
+        console.log(`🔍 ឆែកឈ្មោះទៅ G2Bulk -> ហ្គេម: ${gameCode} | ID: ${playerId} | Zone: "${cleanZoneId}"`);
+
         const response = await fetch(`${G2BULK_CONFIG.BASE_URL}/games/checkPlayerId`, {
             method: 'POST',
             headers: {
@@ -132,13 +156,13 @@ app.post('/api/games/verify', async (req, res) => {
             body: JSON.stringify({
                 game: gameCode,
                 user_id: playerId,
-                server_id: zoneId || '',
+                server_id: cleanZoneId, 
                 charname: 'check'
             })
         });
 
         const result = await response.json();
-        console.log('🔍 លទ្ធផលឆែកឈ្មោះពី G2Bulk:', result);
+        console.log('📦 លទ្ធផលឆ្លើយតបឆែកឈ្មោះពី G2Bulk:', result);
 
         if (result.valid === 'valid' || result.name) {
             return res.json({ success: true, nickname: result.name });
