@@ -17,17 +17,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ⚙️ ផ្នែកកំណត់រចនាសម្ព័ន្ធ API (CONFIGURATION SECTION)
 // =========================================================================
 
-// ១. ព័ត៌មានគណនី ABA PAYWAY API
 const ABA_CONFIG = {
     API_URL: 'https://checkout.ababank.com/api/payment-gateway/v1/payments/purchase', 
     MERCHANT_ID: process.env.ABA_MERCHANT_ID || 'YOUR_ABA_MERCHANT_ID', 
     API_KEY: process.env.ABA_API_KEY || 'YOUR_ABA_API_KEY'
 };
 
-// ២. ព័ត៌មានគណនី G2BULK RESELLER API
 const G2BULK_CONFIG = {
     BASE_URL: 'https://api.g2bulk.com/v1',
-    API_KEY: '0d38b7cc6876ca4e4c46c4d0dbbfa15c5f058cc053e67a0f6b6ee675dad7ba39' // API Key ពិតរបស់បង
+    API_KEY: '0d38b7cc6876ca4e4c46c4d0dbbfa15c5f058cc053e67a0f6b6ee675dad7ba39'
 };
 
 // =========================================================================
@@ -50,12 +48,12 @@ const writeOrders = (data) => {
     }
 };
 
-// មុខងារបម្លែងឈ្មោះហ្គេមពី Frontend ទៅជា Code របស់ G2Bulk
+// បម្លែងឈ្មោះឱ្យត្រូវតាមស្តង់ដារ G2Bulk (គាំទ្រទាំងបុក និងឆែកឈ្មោះ)
 function filterGameCode(gameName) {
     if (!gameName) return '';
     const name = gameName.toLowerCase().trim();
     if (name.includes('mobile legends') || name.includes('mlbb')) return 'mlbb';
-    if (name.includes('pubg')) return 'pubg_mobile';
+    if (name.includes('pubg')) return 'pubg_mobile'; 
     if (name.includes('free fire') || name.includes('ff')) return 'free_fire';
     return name.replace(' ', '_');
 }
@@ -68,31 +66,34 @@ function createAbaHash(req_time, tran_id, amount, items, firstname, lastname, em
 // =========================================================================
 // 🤖 មុខងាររត់ទៅបុកហ្គេមស្វ័យប្រវត្តតាម G2BULK API
 // =========================================================================
-async function autoDeliverDiamond(order) {
+async function autoDeliverDiamond(order, req) {
     const gameCode = filterGameCode(order.game);
     const url = `${G2BULK_CONFIG.BASE_URL}/games/${gameCode}/order`;
 
-    // 🛠️ ជម្រះទិន្នន័យ Zone ID ឱ្យស្អាតមុននឹងផ្ញើទៅបុកលុយហ្គេម
-    let cleanZoneId = order.zoneId ? order.zoneId.toString().trim() : '';
-    if (
-        cleanZoneId.toLowerCase() === 'n/a' || 
-        cleanZoneId.toLowerCase() === 'null' || 
-        cleanZoneId.toLowerCase() === 'undefined' ||
-        gameCode !== 'mlbb' // បើមិនមែន Mobile Legends គឺមិនត្រូវការ Zone ID ឡើយ
-    ) {
-        cleanZoneId = '';
-    }
-
-    console.log(`🤖 [G2BULK] កំពុងកុម្ម៉ង់កញ្ចប់ "${order.diamond}" សម្រាប់ ID: ${order.playerId} | Zone: "${cleanZoneId}"...`);
+    // ឌីណាមិក Domain Webhook ទៅតាម Host របស់វិបសាយដែលកំពុងរត់ផ្ទាល់ខ្លួន (ការពារដាច់ទៅលីងចាស់)
+    const currentHost = req && req.headers.host ? req.headers.host : (process.env.VERCEL_URL || 'oun-three.vercel.app');
 
     const requestBody = {
         catalogue_name: order.diamond, 
         player_id: order.playerId,
-        server_id: cleanZoneId,
         charname: 'Customer', 
         remark: `Order ${order.id}`, 
-        callback_url: `https://${process.env.VERCEL_URL || 'pharath3.vercel.app'}/api/reseller/webhook` 
+        callback_url: `https://${currentHost}/api/reseller/webhook` 
     };
+
+    // លុបចោល server_id ដាច់ខាត បើមិនមែនជា MLBB (G2Bulk មិនឱ្យផ្ញើឡើយបើហ្គេមផ្សេង)
+    let cleanZoneId = order.zoneId ? order.zoneId.toString().trim() : '';
+    if (
+        cleanZoneId.toLowerCase() !== 'n/a' && 
+        cleanZoneId.toLowerCase() !== 'null' && 
+        cleanZoneId.toLowerCase() !== 'undefined' && 
+        cleanZoneId !== '' &&
+        gameCode === 'mlbb'
+    ) {
+        requestBody.server_id = cleanZoneId;
+    }
+
+    console.log(`🤖 [G2BULK] កំពុងរត់បញ្ជាទិញ៖`, requestBody);
 
     try {
         const response = await fetch(url, {
@@ -105,10 +106,9 @@ async function autoDeliverDiamond(order) {
         });
 
         const result = await response.json();
-        console.log('📦 លទ្ធផលតបពី G2Bulk ពេលកុម្ម៉ង់៖', result);
+        console.log('📦 លទ្ធផលតបពី G2Bulk៖', result);
 
         if (result.success === true) {
-            console.log(`⏳ [PENDING] G2Bulk បានទទួលការបញ្ជាទិញហើយ កំពុងដំណើរការ...`);
             return true;
         } else {
             throw new Error(result.message || 'G2BulkRejected');
@@ -123,10 +123,13 @@ async function autoDeliverDiamond(order) {
 // 🌐 ផ្នែកអាសយដ្ឋាន API (ROUTE ENDPOINTS)
 // =========================================================================
 
-// ១. 🔍 API ផ្ទៀងផ្ទាត់ឈ្មោះគណនីហ្គេមពិតៗពី G2Bulk (គាំទ្រគ្រប់ហ្គេម ១០០%)
+// ១. 🔍 API ផ្ទៀងផ្ទាត់ឈ្មោះគណនីហ្គេមពិតៗពី G2Bulk (ដោះស្រាយបញ្ហា PUBG / Free Fire រួចរាល់)
 app.post('/api/games/verify', async (req, res) => {
     try {
-        const { game, playerId, zoneId } = req.body;
+        // ការពារការបញ្ជូនឈ្មោះ Key ខុសគ្នាពី Frontend (គាំទ្រទាំង camelCase និង snake_case)
+        const game = req.body.game;
+        const playerId = req.body.playerId || req.body.player_id;
+        const zoneId = req.body.zoneId || req.body.zone_id || req.body.server_id;
 
         if (!game || !playerId) {
             return res.status(400).json({ success: false, message: 'សូមបញ្ចូលព័ត៌មានឱ្យបានគ្រប់គ្រាន់!' });
@@ -134,18 +137,26 @@ app.post('/api/games/verify', async (req, res) => {
 
         const gameCode = filterGameCode(game);
 
-        // 🛠️ ជម្រះទិន្នន័យ Zone ID ឱ្យស្អាតដាច់ខាតសម្រាប់ PUBG នឹង Free Fire កុំឱ្យ G2Bulk បដិសេធ
+        // បង្កើត Payload ស្អាតស្អំ
+        const requestData = {
+            game: gameCode,
+            user_id: playerId.toString().trim(),
+            charname: 'check'
+        };
+
+        // លក្ខខណ្ឌចម្រោះ៖ មានតែ Mobile Legends ប៉ុណ្ណោះ ទើបអនុញ្ញាតឱ្យមាន key 'server_id' ទៅកាន់ API
         let cleanZoneId = zoneId ? zoneId.toString().trim() : '';
         if (
-            cleanZoneId.toLowerCase() === 'n/a' || 
-            cleanZoneId.toLowerCase() === 'null' || 
-            cleanZoneId.toLowerCase() === 'undefined' ||
-            gameCode !== 'mlbb' // បើមិនមែន Mobile Legends គឺដក Zone ចោលទាំងអស់
+            cleanZoneId.toLowerCase() !== 'n/a' && 
+            cleanZoneId.toLowerCase() !== 'null' && 
+            cleanZoneId.toLowerCase() !== 'undefined' && 
+            cleanZoneId !== '' &&
+            gameCode === 'mlbb'
         ) {
-            cleanZoneId = '';
+            requestData.server_id = cleanZoneId;
         }
 
-        console.log(`🔍 ឆែកឈ្មោះទៅ G2Bulk -> ហ្គេម: ${gameCode} | ID: ${playerId} | Zone: "${cleanZoneId}"`);
+        console.log(`🔍 ឆែកឈ្មោះទៅ G2Bulk -> ហ្គេម: ${gameCode}`, requestData);
 
         const response = await fetch(`${G2BULK_CONFIG.BASE_URL}/games/checkPlayerId`, {
             method: 'POST',
@@ -153,21 +164,17 @@ app.post('/api/games/verify', async (req, res) => {
                 'Content-Type': 'application/json',
                 'X-API-Key': G2BULK_CONFIG.API_KEY
             },
-            body: JSON.stringify({
-                game: gameCode,
-                user_id: playerId,
-                server_id: cleanZoneId, 
-                charname: 'check'
-            })
+            body: JSON.stringify(requestData)
         });
 
         const result = await response.json();
         console.log('📦 លទ្ធផលឆ្លើយតបឆែកឈ្មោះពី G2Bulk:', result);
 
-        if (result.valid === 'valid' || result.name) {
-            return res.json({ success: true, nickname: result.name });
+        if (result.valid === 'valid' || result.name || result.username) {
+            const finalName = result.name || result.username || 'រកឃើញគណនី';
+            return res.json({ success: true, nickname: finalName });
         } else {
-            return res.status(400).json({ success: false, message: 'រកមិនឃើញគណនីហ្គេម ឬទិន្នន័យមិនត្រឹមត្រូវឡើយ!' });
+            return res.status(400).json({ success: false, message: result.message || 'រកមិនឃើញគណនីហ្គេម ឬទិន្នន័យមិនត្រឹមត្រូវឡើយ!' });
         }
 
     } catch (error) {
@@ -240,7 +247,7 @@ app.post('/api/aba/webhook', async (req, res) => {
         writeOrders(orders);
 
         try {
-            await autoDeliverDiamond(order);
+            await autoDeliverDiamond(order, req);
         } catch (error) {
             orders[orderIndex].status = 'Failed';
             writeOrders(orders);
@@ -279,7 +286,6 @@ app.post('/api/reseller/webhook', (req, res) => {
     return res.status(200).send('OK');
 });
 
-// ដំណើរការ Server
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
