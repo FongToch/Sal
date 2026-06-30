@@ -1,0 +1,457 @@
+:root {
+    --bg-color: #060b13;
+    --card-bg: #101726;
+    --input-bg: #1a2333;
+    --accent-color: #0ea5e9;
+    --text-color: #f8fafc;
+    --text-muted: #64748b;
+    --danger: #ef4444;
+    --success: #10b981;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Kantumruy Pro', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 450px;
+    padding: 75px 15px 90px 15px;
+}
+
+/* Top Nav */
+.top-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    max-width: 450px;
+    height: 65px;
+    background-color: #0a0f1d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    z-index: 100;
+}
+
+.search-container {
+    position: relative;
+    flex: 1;
+    margin-right: 15px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-container input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    background-color: var(--card-bg);
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    color: white;
+    font-size: 13px;
+}
+
+.action-icons { display: flex; gap: 15px; }
+.icon-badge { position: relative; font-size: 20px; color: #1e293b; }
+.badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 50%;
+}
+/* =========================================================================
+ * 🎆 គ្រោងទម្រង់ BANNER SLIDER (HTML IMAGE VERSION)
+ * ========================================================================= */
+.hero-banner {
+    width: 100%;
+    height: 170px;          /* កម្ពស់ស្តង់ដារល្មមស្អាតលើ Mobile */
+    border-radius: 16px;
+    margin: 15px 0 25px 0;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;       /* ការពារមិនឱ្យរូបភាពលោតធ្លាយចេញក្រៅ */
+    background-color: #0b1420;
+}
+
+/* ស្ទីលស្លាយនីមួយៗ */
+.banner-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease-in-out, visibility 0.6s;
+    display: flex;
+    align-items: center;    
+    padding: 0 25px;        
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.banner-slide.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+
+/* ⚡ ស្ទីលគ្រប់គ្រងរូបភាពដែលបង Add ចូល (ឱ្យរត់ពេញប្រអប់ស្វ័យប្រវត្ត) */
+.banner-bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* កាត់តម្រឹមរូបភាពឱ្យសមល្មមនឹងប្រអប់មិនឱ្យរំប៉ីប៉ើ */
+    object-position: center;
+    z-index: 1;             /* ឱ្យនៅបាតក្រោមគេបង្អស់ */
+}
+
+/* 🖤 ស្រទាប់ពណ៌ងងឹតបាំងពីលើរូបភាព ដើម្បីកុំឱ្យចាំងភ្នែកមើលអក្សរមិនច្បាស់ */
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, rgba(11, 20, 32, 0.95) 40%, rgba(11, 20, 32, 0.3) 100%);
+    z-index: 2;             /* ឱ្យនៅពីលើរូបភាព តែនៅក្រោមអក្សរ */
+}
+
+/* 📦 ប្រអប់ផ្ទុកអក្សរខាងក្នុង Banner */
+.banner-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;               
+    max-width: 70%;         
+    text-align: left;
+    z-index: 3;             /* រុញឱ្យមកលើគេបង្អស់ដើម្បីកុំឱ្យបាត់អក្សរ */
+}
+
+/* 🏷️ ស្ទីលប៊ូតុង Tag តូច */
+.banner-content .tag {
+    align-self: flex-start;
+    background: #6366f1;    
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* អក្សរធំ TOP UP GAME */
+.banner-content h2 {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+/* អក្សរតូចខាងក្រោម */
+.banner-content p {
+    color: #94a3b8;         
+    font-size: 11px;
+    margin: 0;
+    padding: 0;
+    text-transform: uppercase;
+}
+
+/* 🔘 គ្រាប់ចុច Dots ខាងក្រោម */
+.banner-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 25px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;            
+}
+
+.banner-dots .dot {
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.banner-dots .dot.active {
+    width: 18px;
+    background: #38bdf8;    
+    border-radius: 10px;
+}
+
+
+.banner-content h2 { font-size: 22px; font-weight: 800; letter-spacing: 1px; margin: 5px 0;}
+.banner-content p { font-size: 11px; color: var(--text-muted); }
+.banner-content .tag { background: #3b0764; font-size: 10px; padding: 2px 8px; border-radius: 4px; color: #d8b4fe;}
+.banner-dots { display: flex; gap: 6px; margin-top: 15px; }
+.banner-dots .dot { width: 6px; height: 6px; background: #334155; border-radius: 50%; }
+.banner-dots .dot.active { width: 18px; background: var(--accent-color); border-radius: 4px; }
+
+/* Section Title */
+.section-title h3 { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #f1f5f9; }
+
+/* Game Grid (៤ គ្រាប់មួយជួរស្អាតរលោង) */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 25px;
+}
+
+.game-card { text-align: center; cursor: pointer; }
+.game-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 16px;
+    object-fit: cover;
+    background-color: var(--card-bg);
+    margin-bottom: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.game-card span {
+    display: block;
+    font-size: 11px;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Membership Banner */
+.member-banner {
+    background: linear-gradient(90deg, #101b2b 0%, #0c2540 100%);
+    border-radius: 14px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    border: 1px solid #1d4ed8;
+}
+.member-text h4 { font-size: 12px; color: #e0f2fe; font-weight: 700; }
+.member-text p { font-size: 10px; color: var(--text-muted); }
+.btn-check { background-color: #0284c7; border: none; color: white; padding: 6px 14px; border-radius: 8px; font-size: 11px; cursor: pointer;}
+
+/* Flash Sale */
+.flash-sale-section {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    padding: 15px;
+    border: 1px solid #1e293b;
+}
+.flash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+.flash-title { font-weight: bold; font-size: 15px; color: #f1f5f9; }
+.flash-title i { color: #f59e0b; }
+.countdown-timer { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: bold;}
+.time-block { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; }
+.flash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.flash-card { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 0.75; }
+.flash-card img { width: 100%; height: 100%; object-fit: cover; }
+.discount-badge { position: absolute; bottom: 0; width: 100%; background: rgba(239, 68, 68, 0.9); text-align: center; font-size: 10px; padding: 4px 0; font-weight: bold;}
+
+/* Box Top-up Form */
+.btn-back { background: none; border: none; color: var(--accent-color); font-size: 14px; cursor: pointer; margin-bottom: 15px; }
+.action-box { background-color: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid #1e293b; }
+.box-title { font-size: 15px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1e293b; }
+.input-field { position: relative; }
+.input-field i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+.input-field input { width: 100%; padding: 12px 12px 12px 42px; background-color: var(--input-bg); border: 1px solid #1e293b; border-radius: 10px; color: white; }
+.label-title { display: block; font-size: 13px; margin: 20px 0 10px 0; }
+.diamond-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.diamond-card { background-color: var(--input-bg); border: 1px solid #1e293b; border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; }
+.diamond-card.active { border-color: var(--accent-color); background: rgba(14, 165, 233, 0.1); }
+.diamond-card .dm-amount { font-size: 13px; font-weight: bold; }
+.diamond-card .dm-price { font-size: 12px; color: var(--success); margin-top: 4px; }
+.btn-buy-now { width: 100%; padding: 14px; background-color: var(--accent-color); border: none; border-radius: 12px; color: white; font-weight: bold; margin-top: 20px; cursor: pointer;}
+
+/* Bottom Nav */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    max-width: 450px;
+    height: 65px;
+    background-color: #0a0f1d;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); font-size: 10px; cursor: pointer;}
+.nav-item i { font-size: 18px; margin-bottom: 4px; }
+.nav-item.active { color: var(--accent-color); }
+
+/* Modal */
+.modal { display: none; position: fixed; z-index: 999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 16px; width: 85%; max-width: 320px; text-align: center; border: 1px solid #1e293b;}
+.close-btn { position: absolute; right: 15px; top: 10px; font-size: 20px; cursor: pointer; }
+.khqr-box { background: white; padding: 6px; border-radius: 10px; display: inline-block; margin: 15px 0; }
+.khqr-img { width: 160px; height: 160px; }
+.payment-details { background: var(--input-bg); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: left; font-size: 12px; }
+.btn-confirm { width: 100%; padding: 12px; background: #1e293b; color: white; border: none; border-radius: 8px; }
+/* ផ្នែកទម្រង់ឡូហ្គោជិតរបារ Search */
+.site-logo {
+    display: flex;
+    align-items: center;
+    margin-right: 12px; /* បង្កើតគម្លាតរវាង ឡូហ្គោ និង របារ Search */
+}
+
+.site-logo img {
+    height: 35px;        /* កម្ពស់ប៉ុននេះគឺល្មមស្អាតជាមួយរបារ Top Nav 65px */
+    width: auto;         /* រក្សារាងដើមរបស់ឡូហ្គោមិនឱ្យរំប៉ីប៉ើ */
+    object-fit: contain;
+    border-radius: 6px;  /* បើឡូហ្គោបងរាងជ្រុង វានឹងកាត់គែមរាងមូលបន្តិច */
+}
+/* =========================================================================
+ * 💎 MODERN TOP UP DETAIL PAGE STYLE
+ * ========================================================================= */
+#topup-detail-page {
+    padding: 15px;
+    background-color: #0b1420;
+    min-height: 100vh;
+}
+
+.back-btn {
+    color: #38bdf8;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.topup-container {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.game-header-box h3 {
+    color: #ffffff;
+    margin: 0 0 20px 0;
+    font-size: 18px;
+}
+
+.game-header-box span {
+    color: #38bdf8;
+}
+
+/* ស្ទីលប្រអប់ Input ទំនើប */
+.input-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.input-field-group label {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.input-field-group input {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 12px 15px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.input-field-group input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+/* ស្ទីល Grid កាតតម្លៃពេជ្រ (ទាន់សម័យ) */
+.items-section h4 {
+    color: #ffffff;
+    font-size: 14px;
+    margin: 20px 0 12px 0;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.item-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.item-card .item-qty {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.item-card .item-price {
+    color: #10b981; /* ពណ៌បៃតងលុយ */
+    font-size: 13px;
+}
+
+/* 🌟 ពេលភ្ញៀវចុចចំកញ្ចប់ពេជ្រណាមួយ វានឹងភ្លឺ Glow ឡើងស្អាត */
+.item-card.active {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
+}
+
+/* ប៊ូតុងទូទាត់ប្រាក់ */
+.btn-submit-topup {
+    width: 100%;
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: bold;
+    margin-top: 25px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
