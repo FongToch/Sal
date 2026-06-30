@@ -1,15 +1,24 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔑 API Key របស់បងត្រូវបានកំណត់ចូលក្នុងប្រព័ន្ធរួចរាល់
-const G2BULK_API_KEY = '3e1a5b9fbad481ab61df64fccbb2cb60f03474249e0cc5ae3e736c54ed9ac8f6'; 
-const BASE_URL = 'https://api.g2bulk.com/v1';
+// បង្ហាញ website
+app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// 🔑 API Key របស់បងត្រូវបានកំណត់ចូលក្នុងប្រព័ន្ធរួចរាល់
+const fetch = require("node-fetch");
+
+const G2BULK_URL = "https://api.g2bulk.com/v1/";
+const G2BULK_KEY = "39dd3e37942925f066e44a97194b1fd41ef81d953db2624fb1ada77db1b04c77";
 /**
  * 🔍 ១. Endpoint សម្រាប់ Verify ឈ្មោះ ID ហ្គេមគ្រប់ប្រភេទ (MLBB, PUBG, FF...)
  * URL សម្រាប់ទាញទិន្នន័យ៖ POST http://localhost:3000/api/verify-player
@@ -92,6 +101,80 @@ app.post('/api/buy-topup', async (req, res) => {
     }
 });
 
+// API សម្រាប់ប្រវត្តិការកម្ម៉ង់
+app.get('/api/orders', (req, res) => {
+    res.json([
+        {
+            game: "Mobile Legends",
+            playerId: "314346",
+            zoneId: "614949",
+            price: "$1.50",
+            status: "Completed",
+            date: "2026-07-01"
+        }
+    ]);
+});
+
+// API សម្រាប់ Promotion
+app.get('/api/promotions', (req, res) => {
+    res.json({
+        success: true,
+        promotions: [
+            {
+                id: 1,
+                image: "ml.jpg",
+                discount: "15% OFF",
+                title: "MLBB Promo"
+            },
+            {
+                id: 2,
+                image: "pb.jpg",
+                discount: "10% OFF",
+                title: "PUBG Promo"
+            }
+        ]
+    });
+});
+// API សម្រាប់ Promotions
+app.get('/api/promotions', (req, res) => {
+    res.json({
+        success: true,
+        promotions: [
+            {
+                id: 1,
+                image: "ml.jpg",
+                discount: "15% OFF",
+                title: "Mobile Legends Promo"
+            },
+            {
+                id: 2,
+                image: "pb.jpg",
+                discount: "10% OFF",
+                title: "PUBG Mobile Promo"
+            },
+            {
+                id: 3,
+                image: "vr.jpg",
+                discount: "5% OFF",
+                title: "Valorant Promo"
+            }
+        ]
+    });
+});
+
+// API សម្រាប់ Order History
+app.get('/api/orders', (req, res) => {
+    res.json([
+        {
+            game: "Mobile Legends",
+            playerId: "314346",
+            zoneId: "614949",
+            price: "$1.50",
+            status: "Completed",
+            date: "2026-07-01"
+        }
+    ]);
+});
 // រត់ Server លើ Port 3000
 const PORT = 3000;
 app.listen(PORT, () => {
